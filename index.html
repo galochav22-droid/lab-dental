@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Dental</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; font-size: 15px; color: #1a1a2e; background: #faf9ff; }
+.app { display: flex; height: 100vh; }
+.sidebar { width: 210px; background: #f0eefc; border-right: 0.5px solid #c5c0ef; padding: 1.25rem 0; flex-shrink: 0; display: flex; flex-direction: column; }
+.logo { padding: 0 1.25rem 1.25rem; border-bottom: 0.5px solid #c5c0ef; margin-bottom: 0.75rem; }
+.logo h1 { font-size: 15px; font-weight: 600; color: #26215C; line-height: 1.3; }
+.sync-status { font-size: 11px; margin-top: 4px; }
+.sync-status.ok { color: #3B6D11; }
+.sync-status.err { color: #A32D2D; }
+.sync-status.loading { color: #854F0B; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 1.25rem; cursor: pointer; font-size: 14px; color: #3C3489; border-left: 2px solid transparent; transition: all 0.15s; }
+.nav-item:hover { background: #ddd9f7; color: #26215C; }
+.nav-item.active { background: #ddd9f7; color: #26215C; border-left-color: #534AB7; font-weight: 600; }
+.nav-item i { font-size: 18px; }
+.main { flex: 1; overflow-y: auto; padding: 1.5rem; background: #faf9ff; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.page-header h2 { font-size: 20px; font-weight: 600; color: #26215C; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 0.5px solid #c5c0ef; border-radius: 8px; background: white; cursor: pointer; font-size: 13px; font-weight: 500; color: #1a1a2e; transition: all 0.15s; }
+.btn:hover { background: #f0eefc; }
+.btn.primary { background: #534AB7; border-color: #534AB7; color: white; }
+.btn.primary:hover { background: #3C3489; }
+.btn.success { background: #3B6D11; border-color: #3B6D11; color: white; }
+.btn.success:hover { background: #27500A; }
+.btn.danger { color: #A32D2D; border-color: #f0d0d0; }
+.btn.danger:hover { background: #FCEBEB; }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+.metric { background: white; border: 0.5px solid #c5c0ef; border-radius: 8px; padding: 1rem; }
+.metric label { font-size: 12px; color: #534AB7; display: block; margin-bottom: 6px; }
+.metric .val { font-size: 22px; font-weight: 600; }
+.metric .val.green { color: #3B6D11; }
+.metric .val.amber { color: #854F0B; }
+.metric .val.purple { color: #534AB7; }
+.card { background: white; border: 0.5px solid #c5c0ef; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 12px; font-size: 12px; font-weight: 600; color: #534AB7; border-bottom: 0.5px solid #c5c0ef; background: #f7f6fe; }
+td { padding: 9px 12px; border-bottom: 0.5px solid #ede9fb; color: #1a1a2e; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f7f6fe; }
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.badge.paid { background: #EAF3DE; color: #3B6D11; }
+.badge.pending { background: #FAEEDA; color: #854F0B; }
+.badge.progress { background: #EEEDFE; color: #534AB7; }
+.badge.done { background: #E1F5EE; color: #0F6E56; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(30,20,80,0.55); display: none; align-items: center; justify-content: center; z-index: 200; }
+.modal-overlay.open { display: flex; }
+.modal { background: white; border-radius: 12px; border: 0.5px solid #c5c0ef; padding: 1.5rem; width: 500px; max-width: 95vw; max-height: 85vh; overflow-y: auto; position: relative; z-index: 201; }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; color: #26215C; }
+.form-row { margin-bottom: 1rem; }
+.form-row label { display: block; font-size: 12px; color: #534AB7; margin-bottom: 5px; font-weight: 600; }
+.form-row input, .form-row select, .form-row textarea { width: 100%; padding: 8px 10px; border: 0.5px solid #c5c0ef; border-radius: 8px; font-size: 14px; background: white; color: #1a1a2e; font-family: inherit; }
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus { outline: none; border-color: #534AB7; }
+.form-row textarea { min-height: 70px; resize: vertical; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; border-top: 0.5px solid #ede9fb; padding-top: 1.25rem; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: #EEEDFE; color: #534AB7; flex-shrink: 0; }
+.empty { text-align: center; padding: 3rem 1rem; color: #888; font-size: 14px; }
+.empty i { font-size: 36px; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
+.filter-bar { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select { padding: 7px 10px; border: 0.5px solid #c5c0ef; border-radius: 8px; font-size: 13px; background: white; color: #1a1a2e; font-family: inherit; }
+.filter-bar input { flex: 1; min-width: 140px; }
+.tab-bar { display: flex; gap: 4px; margin-bottom: 1.25rem; border-bottom: 0.5px solid #c5c0ef; }
+.tab { padding: 8px 16px; font-size: 13px; cursor: pointer; color: #534AB7; border-bottom: 2px solid transparent; margin-bottom: -0.5px; }
+.tab.active { color: #26215C; border-bottom-color: #534AB7; font-weight: 600; }
+.loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 1rem; color: #534AB7; font-family: system-ui, sans-serif; }
+.loading-screen i { font-size: 48px; opacity: 0.5; }
+@media (max-width: 600px) {
+  .app { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 0.5rem; gap: 4px; }
+  .logo { display: none; }
+  .nav-item { padding: 8px 12px; border-left: none; border-bottom: 2px solid transparent; font-size: 12px; }
+  .nav-item.active { border-bottom-color: #534AB7; border-left: none; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .form-grid { grid-template-columns: 1fr; }
+  .main { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <i class="ti ti-refresh"></i>
+  <p>Conectando con la base de datos...</p>
+</div>
+
+<div id="app-root" class="app" style="display:none">
+  <nav class="sidebar">
+    <div class="logo">
+      <h1>Laboratorio Dental</h1>
+      <div class="sync-status loading" id="sync-status">Conectando...</div>
+    </div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Inicio</div>
+    <div class="nav-item" onclick="showPage('odontologos',this)"><i class="ti ti-stethoscope"></i> Odontologos</div>
+    <div class="nav-item" onclick="showPage('trabajos',this)"><i class="ti ti-tool"></i> Trabajos</div>
+    <div class="nav-item" onclick="showPage('caja',this)"><i class="ti ti-cash"></i> Caja</div>
+  </nav>
+  <main class="main">
+    <div id="page-dashboard" class="page active">
+      <div class="page-header"><h2>Resumen general</h2><span style="font-size:13px;color:#534AB7" id="fecha-hoy"></span></div>
+      <div class="metrics" id="metrics-cards"></div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1rem;color:#26215C">Ultimos trabajos</div>
+        <table><thead><tr><th>Paciente</th><th>Odontologo</th><th>Trabajo</th><th>Precio</th><th>Estado</th><th>Pago</th></tr></thead>
+        <tbody id="dashboard-tbody"></tbody></table>
+      </div>
+    </div>
+    <div id="page-odontologos" class="page">
+      <div class="page-header"><h2>Odontologos</h2><button class="btn primary" onclick="abrirNuevoOd()"><i class="ti ti-plus"></i> Nuevo odontologo</button></div>
+      <div class="filter-bar"><input type="text" placeholder="Buscar..." id="search-od" oninput="renderOdontologos()"></div>
+      <div class="card" style="padding:0">
+        <table><thead><tr><th></th><th>Nombre</th><th>Telefono</th><th>Email</th><th>Pacientes</th><th>Adeuda</th><th></th></tr></thead>
+        <tbody id="tbody-odontologos"></tbody></table>
+      </div>
+    </div>
+    <div id="page-trabajos" class="page">
+      <div class="page-header"><h2>Trabajos</h2><button class="btn primary" onclick="abrirNuevoTrabajo()"><i class="ti ti-plus"></i> Nuevo trabajo</button></div>
+      <div class="filter-bar">
+        <input type="text" placeholder="Buscar paciente o trabajo..." id="search-tr" oninput="renderTrabajos()">
+        <select id="filter-estado" onchange="renderTrabajos()"><option value="">Todos los estados</option><option value="en_proceso">En proceso</option><option value="entregado">Entregado</option></select>
+        <select id="filter-pago" onchange="renderTrabajos()"><option value="">Todos los pagos</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option></select>
+        <select id="filter-od" onchange="renderTrabajos()"><option value="">Todos los odontologos</option></select>
+      </div>
+      <div class="card" style="padding:0">
+        <table><thead><tr><th>Paciente</th><th>Odontologo</th><th>Trabajo</th><th>Precio</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Pago</th><th></th></tr></thead>
+        <tbody id="tbody-trabajos"></tbody></table>
+      </div>
+    </div>
+    <div id="page-caja" class="page">
+      <div class="page-header"><h2>Caja</h2></div>
+      <div class="tab-bar">
+        <div class="tab active" onclick="showCajaTab('resumen',this)">Resumen</div>
+        <div class="tab" onclick="showCajaTab('pendientes',this)">Pendientes de cobro</div>
+        <div class="tab" onclick="showCajaTab('historial',this)">Historial de cobros</div>
+      </div>
+      <div id="caja-resumen"></div>
+      <div id="caja-pendientes" style="display:none"></div>
+      <div id="caja-historial" style="display:none"></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modal-odontologo" onclick="handleOverlayClick(event,'modal-odontologo')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="od-modal-title">Nuevo odontologo</h3>
+    <input type="hidden" id="od-edit-id">
+    <div class="form-grid">
+      <div class="form-row"><label>Nombre</label><input id="od-nombre" placeholder="Carlos"></div>
+      <div class="form-row"><label>Apellido</label><input id="od-apellido" placeholder="Garcia"></div>
+      <div class="form-row"><label>Telefono</label><input id="od-tel" placeholder="11-1234-5678"></div>
+      <div class="form-row"><label>Email</label><input id="od-email" type="email" placeholder="doctor@mail.com"></div>
+    </div>
+    <div class="form-row"><label>Direccion / Consultorio</label><input id="od-dir" placeholder="Opcional"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-odontologo')">Cancelar</button>
+      <button class="btn primary" onclick="guardarOdontologo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-trabajo" onclick="handleOverlayClick(event,'modal-trabajo')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="tr-modal-title">Nuevo trabajo</h3>
+    <input type="hidden" id="tr-edit-id">
+    <div class="form-grid">
+      <div class="form-row"><label>Odontologo</label><select id="tr-od"><option value="">Seleccionar...</option></select></div>
+      <div class="form-row"><label>Paciente</label><input id="tr-paciente" placeholder="Nombre del paciente"></div>
+      <div class="form-row"><label>Tipo de trabajo</label>
+        <select id="tr-tipo"><option>Corona</option><option>Puente</option><option>Protesis total</option><option>Protesis parcial</option><option>Carilla</option><option>Incrustacion</option><option>Implante</option><option>Modelo de estudio</option><option>Ferula</option><option>Otro</option></select>
+      </div>
+      <div class="form-row"><label>Precio ($)</label><input id="tr-precio" type="number" min="0" placeholder="0"></div>
+      <div class="form-row"><label>Fecha de entrada</label><input id="tr-entrada" type="date"></div>
+      <div class="form-row"><label>Fecha de salida</label><input id="tr-salida" type="date"></div>
+      <div class="form-row"><label>Estado</label><select id="tr-estado"><option value="en_proceso">En proceso</option><option value="entregado">Entregado</option></select></div>
+      <div class="form-row"><label>Pago</label><select id="tr-pago"><option value="pendiente">Pendiente</option><option value="pagado">Pagado</option></select></div>
+    </div>
+    <div class="form-row"><label>Observaciones</label><textarea id="tr-obs" placeholder="Detalle del trabajo, materiales, etc."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('modal-trabajo')">Cancelar</button>
+      <button class="btn primary" onclick="guardarTrabajo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPA_URL='https://rgudlhrhyknszyzzqmme.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJndWRsaHJoeWtuc3p5enpxbW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NjcyMjUsImV4cCI6MjA5NjQ0MzIyNX0.EQ-ScE4G3ZnxyF4G5TcS85WzX9hJtOHyLWnCseRYuOM';
+let sb,odontologos=[],trabajos=[];
+
+async function initApp(){
+  try{
+    sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+    await loadAll();
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('app-root').style.display='flex';
+    setSyncStatus('ok','Conectado');
+    document.getElementById('fecha-hoy').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    renderAll();
+  }catch(e){
+    document.getElementById('loading-screen').innerHTML='<i class="ti ti-wifi-off"></i><p style="color:#A32D2D">Error: '+e.message+'</p>';
+  }
+}
+
+async function loadAll(){
+  const[ods,trabs]=await Promise.all([sb.from('odontologos').select('*').order('created_at'),sb.from('trabajos').select('*').order('created_at',{ascending:false})]);
+  if(ods.error)throw ods.error;
+  if(trabs.error)throw trabs.error;
+  odontologos=ods.data||[];trabajos=trabs.data||[];
+}
+
+function setSyncStatus(t,m){const el=document.getElementById('sync-status');el.className='sync-status '+t;el.textContent=t==='ok'?'● '+m:t==='loading'?'↻ '+m:'✕ '+m;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmtMoney(n){return '$'+Number(n||0).toLocaleString('es-AR');}
+function fmtDate(d){if(!d)return'—';const[y,m,di]=d.split('-');return di+'/'+m+'/'+y;}
+function initials(n,a){return((n||'')[0]||'').toUpperCase()+((a||'')[0]||'').toUpperCase();}
+function renderAll(){renderDashboard();renderOdontologos();renderTrabajos();}
+
+function showPage(p,el){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  el.classList.add('active');
+  if(p==='caja')renderCaja('resumen');
+  if(p==='trabajos'){populateOdFiltro();renderTrabajos();}
+}
+
+function handleOverlayClick(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function renderDashboard(){
+  const cobrado=trabajos.filter(t=>t.pago==='pagado').reduce((a,t)=>a+Number(t.precio||0),0);
+  const pendiente=trabajos.filter(t=>t.pago==='pendiente').reduce((a,t)=>a+Number(t.precio||0),0);
+  const en_proceso=trabajos.filter(t=>t.estado==='en_proceso').length;
+  document.getElementById('metrics-cards').innerHTML=
+    '<div class="metric"><label>Odontologos</label><div class="val purple">'+odontologos.length+'</div></div>'+
+    '<div class="metric"><label>Trabajos activos</label><div class="val purple">'+en_proceso+'</div></div>'+
+    '<div class="metric"><label>Total cobrado</label><div class="val green">'+fmtMoney(cobrado)+'</div></div>'+
+    '<div class="metric"><label>Por cobrar</label><div class="val amber">'+fmtMoney(pendiente)+'</div></div>';
+  const tbody=document.getElementById('dashboard-tbody');
+  const rec=trabajos.slice(0,8);
+  if(!rec.length){tbody.innerHTML='<tr><td colspan="6" class="empty">No hay trabajos aun</td></tr>';return;}
+  tbody.innerHTML=rec.map(function(t){
+    const od=odontologos.find(function(o){return o.id===t.od_id;});
+    return '<tr><td>'+t.paciente+'</td><td>'+(od?od.nombre+' '+od.apellido:'—')+'</td><td>'+t.tipo+'</td><td>'+fmtMoney(t.precio)+'</td>'+
+    '<td><span class="badge '+(t.estado==='entregado'?'done':'progress')+'">'+(t.estado==='entregado'?'Entregado':'En proceso')+'</span></td>'+
+    '<td><span class="badge '+(t.pago==='pagado'?'paid':'pending')+'">'+(t.pago==='pagado'?'Pagado':'Pendiente')+'</span></td></tr>';
+  }).join('');
+}
+
+function renderOdontologos(){
+  const q=(document.getElementById('search-od').value||'').toLowerCase();
+  const lista=odontologos.filter(function(o){return(o.nombre+' '+o.apellido).toLowerCase().includes(q);});
+  const tbody=document.getElementById('tbody-odontologos');
+  if(!lista.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty"><i class="ti ti-stethoscope"></i>No hay odontologos cargados</div></td></tr>';return;}
+  tbody.innerHTML=lista.map(function(o){
+    const trabs=trabajos.filter(function(t){return t.od_id===o.id;});
+    const pacs=new Set(trabs.map(function(t){return t.paciente;})).size;
+    const adeuda=trabs.filter(function(t){return t.pago==='pendiente';}).reduce(function(a,t){return a+Number(t.precio||0);},0);
+    return '<tr><td><div class="avatar">'+initials(o.nombre,o.apellido)+'</div></td>'+
+    '<td style="font-weight:600">'+o.nombre+' '+o.apellido+'</td>'+
+    '<td>'+(o.tel||'—')+'</td><td style="color:#666">'+(o.email||'—')+'</td>'+
+    '<td>'+pacs+'</td>'+
+    '<td><span style="color:'+(adeuda>0?'#854F0B':'#3B6D11')+';font-weight:600">'+fmtMoney(adeuda)+'</span></td>'+
+    '<td style="display:flex;gap:6px">'+
+    '<button class="btn sm" onclick="editOdontologo(\''+o.id+'\')"><i class="ti ti-edit"></i></button>'+
+    '<button class="btn sm danger" onclick="deleteOdontologo(\''+o.id+'\')"><i class="ti ti-trash"></i></button>'+
+    '</td></tr>';
+  }).join('');
+}
+
+function abrirNuevoOd(){
+  document.getElementById('od-edit-id').value='';
+  document.getElementById('od-modal-title').textContent='Nuevo odontologo';
+  ['od-nombre','od-apellido','od-tel','od-email','od-dir'].forEach(function(f){document.getElementById(f).value='';});
+  openModal('modal-odontologo');
+}
+
+async function guardarOdontologo(){
+  const id=document.getElementById('od-edit-id').value;
+  const datos={nombre:document.getElementById('od-nombre').value.trim(),apellido:document.getElementById('od-apellido').value.trim(),tel:document.getElementById('od-tel').value.trim(),email:document.getElementById('od-email').value.trim(),dir:document.getElementById('od-dir').value.trim()};
+  if(!datos.nombre){alert('Ingresa el nombre');return;}
+  setSyncStatus('loading','Guardando...');
+  try{
+    if(id){await sb.from('odontologos').update(datos).eq('id',id);}
+    else{await sb.from('odontologos').insert(Object.assign({id:uid()},datos));}
+    await loadAll();renderAll();closeModal('modal-odontologo');setSyncStatus('ok','Guardado');
+  }catch(e){setSyncStatus('err','Error');alert('Error: '+e.message);}
+}
+
+function editOdontologo(id){
+  const o=odontologos.find(function(x){return x.id===id;});
+  document.getElementById('od-edit-id').value=id;
+  document.getElementById('od-modal-title').textContent='Editar odontologo';
+  document.getElementById('od-nombre').value=o.nombre||'';
+  document.getElementById('od-apellido').value=o.apellido||'';
+  document.getElementById('od-tel').value=o.tel||'';
+  document.getElementById('od-email').value=o.email||'';
+  document.getElementById('od-dir').value=o.dir||'';
+  openModal('modal-odontologo');
+}
+
+async function deleteOdontologo(id){
+  if(!confirm('Eliminar odontologo? Se perderan sus trabajos.'))return;
+  setSyncStatus('loading','Eliminando...');
+  await sb.from('odontologos').delete().eq('id',id);
+  await loadAll();renderAll();setSyncStatus('ok','Listo');
+}
+
+function populateOdSelect(selId,val){
+  const sel=document.getElementById(selId);
+  sel.innerHTML='<option value="">Seleccionar...</option>'+odontologos.map(function(o){return'<option value="'+o.id+'">'+o.nombre+' '+o.apellido+'</option>';}).join('');
+  if(val)sel.value=val;
+}
+
+function populateOdFiltro(){
+  const sel=document.getElementById('filter-od');
+  if(!sel)return;
+  sel.innerHTML='<option value="">Todos los odontologos</option>'+odontologos.map(function(o){return'<option value="'+o.id+'">'+o.nombre+' '+o.apellido+'</option>';}).join('');
+}
+
+function renderTrabajos(){
+  populateOdFiltro();
+  const q=(document.getElementById('search-tr').value||'').toLowerCase();
+  const estado=document.getElementById('filter-estado').value||'';
+  const pago=document.getElementById('filter-pago').value||'';
+  const odId=document.getElementById('filter-od').value||'';
+  const lista=trabajos.filter(function(t){
+    const od=odontologos.find(function(o){return o.id===t.od_id;});
+    const txt=(t.paciente+t.tipo+(od?od.nombre+od.apellido:'')).toLowerCase();
+    return txt.includes(q)&&(!estado||t.estado===estado)&&(!pago||t.pago===pago)&&(!odId||t.od_id===odId);
+  });
+  const tbody=document.getElementById('tbody-trabajos');
+  if(!lista.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty"><i class="ti ti-tool"></i>No hay trabajos</div></td></tr>';return;}
+  tbody.innerHTML=lista.map(function(t){
+    const od=odontologos.find(function(o){return o.id===t.od_id;});
+    const btnE=t.estado==='en_proceso'?'<br><button class="btn sm success" onclick="marcarEntregado(\''+t.id+'\')"><i class="ti ti-check"></i> Entregar</button>':'';
+    const btnC=t.pago==='pendiente'?'<br><button class="btn sm primary" onclick="marcarPagado(\''+t.id+'\')">Cobrar</button>':'';
+    return '<tr>'+
+    '<td style="font-weight:600">'+t.paciente+'</td>'+
+    '<td>'+(od?od.nombre+' '+od.apellido:'—')+'</td>'+
+    '<td>'+t.tipo+(t.observaciones?'<br><span style="font-size:11px;color:#888">'+t.observaciones.slice(0,40)+'</span>':'')+'</td>'+
+    '<td>'+fmtMoney(t.precio)+'</td>'+
+    '<td>'+fmtDate(t.entrada)+'</td>'+
+    '<td>'+fmtDate(t.salida)+'</td>'+
+    '<td><span class="badge '+(t.estado==='entregado'?'done':'progress')+'">'+(t.estado==='entregado'?'Entregado':'En proceso')+'</span>'+btnE+'</td>'+
+    '<td><span class="badge '+(t.pago==='pagado'?'paid':'pending')+'">'+(t.pago==='pagado'?'Pagado':'Pendiente')+'</span>'+btnC+'</td>'+
+    '<td style="display:flex;gap:4px">'+
+    '<button class="btn sm" onclick="editTrabajo(\''+t.id+'\')"><i class="ti ti-edit"></i></button>'+
+    '<button class="btn sm danger" onclick="deleteTrabajo(\''+t.id+'\')"><i class="ti ti-trash"></i></button>'+
+    '</td></tr>';
+  }).join('');
+}
+
+function abrirNuevoTrabajo(){
+  document.getElementById('tr-edit-id').value='';
+  document.getElementById('tr-modal-title').textContent='Nuevo trabajo';
+  populateOdSelect('tr-od','');
+  ['tr-paciente','tr-precio','tr-entrada','tr-salida','tr-obs'].forEach(function(f){document.getElementById(f).value='';});
+  document.getElementById('tr-estado').value='en_proceso';
+  document.getElementById('tr-pago').value='pendiente';
+  openModal('modal-trabajo');
+}
+
+async function guardarTrabajo(){
+  const id=document.getElementById('tr-edit-id').value;
+  const datos={od_id:document.getElementById('tr-od').value,paciente:document.getElementById('tr-paciente').value.trim(),tipo:document.getElementById('tr-tipo').value,precio:document.getElementById('tr-precio').value||null,entrada:document.getElementById('tr-entrada').value||null,salida:document.getElementById('tr-salida').value||null,estado:document.getElementById('tr-estado').value,pago:document.getElementById('tr-pago').value,observaciones:document.getElementById('tr-obs').value.trim()};
+  if(!datos.paciente){alert('Ingresa el nombre del paciente');return;}
+  if(!datos.od_id){alert('Selecciona el odontologo');return;}
+  setSyncStatus('loading','Guardando...');
+  try{
+    if(id){await sb.from('trabajos').update(datos).eq('id',id);}
+    else{await sb.from('trabajos').insert(Object.assign({id:uid()},datos));}
+    await loadAll();renderAll();closeModal('modal-trabajo');setSyncStatus('ok','Guardado');
+  }catch(e){setSyncStatus('err','Error');alert('Error: '+e.message);}
+}
+
+function editTrabajo(id){
+  const t=trabajos.find(function(x){return x.id===id;});
+  document.getElementById('tr-edit-id').value=id;
+  document.getElementById('tr-modal-title').textContent='Editar trabajo';
+  populateOdSelect('tr-od',t.od_id);
+  document.getElementById('tr-paciente').value=t.paciente||'';
+  document.getElementById('tr-tipo').value=t.tipo||'Corona';
+  document.getElementById('tr-precio').value=t.precio||'';
+  document.getElementById('tr-entrada').value=t.entrada||'';
+  document.getElementById('tr-salida').value=t.salida||'';
+  document.getElementById('tr-estado').value=t.estado||'en_proceso';
+  document.getElementById('tr-pago').value=t.pago||'pendiente';
+  document.getElementById('tr-obs').value=t.observaciones||'';
+  openModal('modal-trabajo');
+}
+
+async function deleteTrabajo(id){
+  if(!confirm('Eliminar trabajo?'))return;
+  setSyncStatus('loading','Eliminando...');
+  await sb.from('trabajos').delete().eq('id',id);
+  await loadAll();renderAll();setSyncStatus('ok','Listo');
+}
+
+async function marcarEntregado(id){
+  setSyncStatus('loading','Guardando...');
+  const t=trabajos.find(function(x){return x.id===id;});
+  await sb.from('trabajos').update({estado:'entregado',salida:t.salida||new Date().toISOString().slice(0,10)}).eq('id',id);
+  await loadAll();renderAll();setSyncStatus('ok','Guardado');
+}
+
+async function marcarPagado(id){
+  setSyncStatus('loading','Guardando...');
+  await sb.from('trabajos').update({pago:'pagado'}).eq('id',id);
+  await loadAll();renderAll();setSyncStatus('ok','Guardado');
+}
+
+function showCajaTab(tab,el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  ['caja-resumen','caja-pendientes','caja-historial'].forEach(function(id){document.getElementById(id).style.display='none';});
+  document.getElementById('caja-'+tab).style.display='block';
+  renderCaja(tab);
+}
+
+function renderCaja(tab){
+  if(tab==='resumen'){
+    const cobrado=trabajos.filter(function(t){return t.pago==='pagado';}).reduce(function(a,t){return a+Number(t.precio||0);},0);
+    const pendiente=trabajos.filter(function(t){return t.pago==='pendiente';}).reduce(function(a,t){return a+Number(t.precio||0);},0);
+    let html='<div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.5rem">'+
+      '<div class="metric"><label>Total facturado</label><div class="val purple">'+fmtMoney(cobrado+pendiente)+'</div></div>'+
+      '<div class="metric"><label>Cobrado</label><div class="val green">'+fmtMoney(cobrado)+'</div></div>'+
+      '<div class="metric"><label>Pendiente</label><div class="val amber">'+fmtMoney(pendiente)+'</div></div>'+
+      '</div><div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:1rem;color:#26215C">Por odontologo</div>'+
+      '<table><thead><tr><th>Odontologo</th><th>Trabajos</th><th>Total</th><th>Cobrado</th><th>Pendiente</th></tr></thead><tbody>';
+    odontologos.forEach(function(o){
+      const trabs=trabajos.filter(function(t){return t.od_id===o.id;});
+      const cob=trabs.filter(function(t){return t.pago==='pagado';}).reduce(function(a,t){return a+Number(t.precio||0);},0);
+      const pend=trabs.filter(function(t){return t.pago==='pendiente';}).reduce(function(a,t){return a+Number(t.precio||0);},0);
+      html+='<tr><td style="font-weight:600">'+o.nombre+' '+o.apellido+'</td><td>'+trabs.length+'</td><td>'+fmtMoney(cob+pend)+'</td><td style="color:#3B6D11">'+fmtMoney(cob)+'</td><td style="color:'+(pend>0?'#854F0B':'#666')+'">'+fmtMoney(pend)+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+    document.getElementById('caja-resumen').innerHTML=html;
+  }
+  if(tab==='pendientes'){
+    const lista=trabajos.filter(function(t){return t.pago==='pendiente';});
+    let html='<div class="card" style="padding:0"><table><thead><tr><th>Paciente</th><th>Odontologo</th><th>Trabajo</th><th>Precio</th><th>Entrada</th><th>Salida</th><th></th></tr></thead><tbody>';
+    if(!lista.length)html+='<tr><td colspan="7"><div class="empty"><i class="ti ti-check"></i>Todo cobrado</div></td></tr>';
+    lista.forEach(function(t){
+      const od=odontologos.find(function(o){return o.id===t.od_id;});
+      html+='<tr><td style="font-weight:600">'+t.paciente+'</td><td>'+(od?od.nombre+' '+od.apellido:'—')+'</td><td>'+t.tipo+'</td><td style="color:#854F0B;font-weight:600">'+fmtMoney(t.precio)+'</td><td>'+fmtDate(t.entrada)+'</td><td>'+fmtDate(t.salida)+'</td><td><button class="btn sm primary" onclick="marcarPagado(\''+t.id+'\')">Marcar cobrado</button></td></tr>';
+    });
+    html+='</tbody></table></div>';
+    document.getElementById('caja-pendientes').innerHTML=html;
+  }
+  if(tab==='historial'){
+    const lista=trabajos.filter(function(t){return t.pago==='pagado';});
+    let html='<div class="card" style="padding:0"><table><thead><tr><th>Paciente</th><th>Odontologo</th><th>Trabajo</th><th>Precio</th><th>Salida</th></tr></thead><tbody>';
+    if(!lista.length)html+='<tr><td colspan="5"><div class="empty"><i class="ti ti-cash"></i>Sin cobros aun</div></td></tr>';
+    lista.forEach(function(t){
+      const od=odontologos.find(function(o){return o.id===t.od_id;});
+      html+='<tr><td style="font-weight:600">'+t.paciente+'</td><td>'+(od?od.nombre+' '+od.apellido:'—')+'</td><td>'+t.tipo+'</td><td style="color:#3B6D11;font-weight:600">'+fmtMoney(t.precio)+'</td><td>'+fmtDate(t.salida)+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+    document.getElementById('caja-historial').innerHTML=html;
+  }
+}
+
+initApp();
+</script>
+</body>
+</html>
